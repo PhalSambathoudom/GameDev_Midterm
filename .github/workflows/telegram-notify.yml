@@ -1,0 +1,84 @@
+name: Telegram Notification
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram Notification
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_TOPIC_ID: ${{ secrets.TELEGRAM_TOPIC_ID }}
+          REPO_NAME: ${{ github.repository }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          PUSHER: ${{ github.actor }}
+          COMMIT_AUTHOR: ${{ github.event.head_commit.author.name }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+        run: |
+          python3 -c '
+          import os
+          import sys
+          import urllib.request
+          import urllib.parse
+          import html
+
+          token = os.environ.get("TELEGRAM_TOKEN")
+          chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+          topic_id = os.environ.get("TELEGRAM_TOPIC_ID")
+
+          if not token or not chat_id:
+              print("Error: TELEGRAM_TOKEN or TELEGRAM_CHAT_ID secret is not set in repository settings.", file=sys.stderr)
+              sys.exit(1)
+
+          repo = os.environ.get("REPO_NAME", "Unknown Repo")
+          branch = os.environ.get("BRANCH_NAME", "Unknown Branch")
+          pusher = os.environ.get("PUSHER", "")
+          author = os.environ.get("COMMIT_AUTHOR", "")
+          commit_msg = os.environ.get("COMMIT_MSG", "").strip() or "(No commit message)"
+          commit_url = os.environ.get("COMMIT_URL", "")
+
+          # Determine the display name for who committed / pushed
+          if author and pusher and author.lower() != pusher.lower():
+              committer = f"{author} (@{pusher})"
+          elif author:
+              committer = author
+          else:
+              committer = pusher or "Unknown"
+
+          text = (
+              "🚀 <b>New Commit Notification</b>\n\n"
+              f"👤 <b>Committed by:</b> {html.escape(committer)}\n"
+              f"🌿 <b>Branch:</b> <code>{html.escape(branch)}</code>\n"
+              f"💬 <b>Message:</b>\n<i>{html.escape(commit_msg)}</i>\n\n"
+              f"📦 <b>Repository:</b> {html.escape(repo)}\n"
+              f"🔗 <b>View Commit:</b> <a href=\"{commit_url}\">Open on GitHub</a>"
+          )
+
+          params = {
+              "chat_id": chat_id,
+              "text": text,
+              "parse_mode": "HTML",
+              "disable_web_page_preview": "true"
+          }
+
+          # If topic_id is provided, route directly to the specified topic/thread
+          if topic_id and topic_id.strip():
+              params["message_thread_id"] = topic_id.strip()
+
+          url = f"https://api.telegram.org/bot{token}/sendMessage"
+          payload = urllib.parse.urlencode(params).encode("utf-8")
+
+          req = urllib.request.Request(url, data=payload, headers={"User-Agent": "GitHub-Actions-Notifier"})
+          try:
+              with urllib.request.urlopen(req) as resp:
+                  print("Telegram notification sent successfully!")
+          except Exception as e:
+              print(f"Failed to send notification: {e}", file=sys.stderr)
+              sys.exit(1)
+          '
