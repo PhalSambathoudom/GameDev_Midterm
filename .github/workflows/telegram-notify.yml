@@ -1,6 +1,7 @@
 name: Telegram Notification
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - '**'
@@ -109,14 +110,58 @@ jobs:
                       "2. Under the label 'PUNCHLINE:', write a short, witty 1-sentence dramatic action-movie tagline or humorous punchline based specifically on the changes made in this commit (e.g., In a world where enemies ignored walls, one developer dared to add colliders.).\n\n"
                       f"Changed Files:\n" + "\n".join(changed_files[:15]) + f"\n\nDiff Summary:\n{diff_stat[:1500]}"
                   )
-                  url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+                  # Discover available models dynamically from Google AI Studio
+                  target_models = []
+                  try:
+                      list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={gemini_key}"
+                      list_req = urllib.request.Request(list_url, headers={"User-Agent": "GitHub-Notifier"})
+                      with urllib.request.urlopen(list_req, timeout=5) as list_resp:
+                          models_data = json.loads(list_resp.read().decode("utf-8"))
+                          for m in models_data.get("models", []):
+                              m_name = m.get("name", "")
+                              methods = m.get("supportedGenerationMethods", [])
+                              if "generateContent" in methods:
+                                  clean = m_name.replace("models/", "")
+                                  # Google explicitly designates Flash models for the Free Tier
+                                  if "flash" in clean.lower():
+                                      target_models.append(clean)
+                          # Prioritize stable, high-availability free tier models
+                          preferred_order = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.7-flash"]
+                          target_models.sort(key=lambda x: preferred_order.index(x) if x in preferred_order else 99)
+                          print(f"Discovered active Free-Tier Flash models: {target_models[:5]}", file=sys.stderr)
+                  except Exception as e:
+                      print(f"Model list discovery: {e}", file=sys.stderr)
+
+                  if not target_models:
+                      target_models = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.7-flash"]
+
                   req_data = json.dumps({
                       "contents": [{"parts": [{"text": prompt}]}]
                   }).encode("utf-8")
-                  req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
-                  with urllib.request.urlopen(req, timeout=10) as resp:
-                      res_json = json.loads(resp.read().decode("utf-8"))
-                      text_reply = res_json["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+                  text_reply = ""
+                  for model_name in target_models:
+                      try:
+                          url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
+                          req = urllib.request.Request(
+                              url,
+                              data=req_data,
+                              headers={
+                                  "Content-Type": "application/json",
+                                  "User-Agent": "GitHub-Notifier"
+                              }
+                          )
+                          with urllib.request.urlopen(req, timeout=10) as resp:
+                              res_json = json.loads(resp.read().decode("utf-8"))
+                              text_reply = res_json["candidates"][0]["content"]["parts"][0]["text"].strip()
+                              if text_reply:
+                                  print(f"Successfully generated Patch Notes with Free-Tier model: {model_name}", file=sys.stderr)
+                                  break
+                      except Exception as me:
+                          print(f"Trying {model_name} failed: {me}", file=sys.stderr)
+                          continue
+
+                  if text_reply:
                       if "PATCH_NOTES:" in text_reply:
                           parts = text_reply.split("PUNCHLINE:")
                           notes_part = parts[0].replace("PATCH_NOTES:", "").strip()
@@ -182,6 +227,8 @@ jobs:
               author = os.environ.get("COMMIT_AUTHOR", "")
               commit_msg = os.environ.get("COMMIT_MSG", "").strip() or "(No commit message)"
               commit_url = os.environ.get("COMMIT_URL", "")
+              if not commit_url and repo:
+                  commit_url = f"https://github.com/{repo}"
               button_url = commit_url
               button_text = "⚔️ Inspect Quest on GitHub"
 
@@ -218,7 +265,7 @@ jobs:
           if topic_id and topic_id.strip():
               params["message_thread_id"] = topic_id.strip()
 
-          if button_url:
+          if button_url and button_url.startswith("http"):
               reply_markup = {
                   "inline_keyboard": [
                       [
