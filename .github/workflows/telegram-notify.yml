@@ -4,26 +4,47 @@ on:
   push:
     branches:
       - '**'
+  pull_request:
+    types: [opened, closed]
 
 jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          lfs: false
+
       - name: Send Telegram Notification
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_TOPIC_ID: ${{ secrets.TELEGRAM_TOPIC_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          EVENT_NAME: ${{ github.event_name }}
           REPO_NAME: ${{ github.repository }}
           BRANCH_NAME: ${{ github.ref_name }}
           PUSHER: ${{ github.actor }}
           COMMIT_AUTHOR: ${{ github.event.head_commit.author.name }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           COMMIT_URL: ${{ github.event.head_commit.url }}
+          PR_ACTION: ${{ github.event.action }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_USER: ${{ github.event.pull_request.user.login }}
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
         run: |
           python3 -c '
           import os
           import sys
+          import subprocess
+          import json
+          import random
           import urllib.request
           import urllib.parse
           import html
@@ -31,45 +52,181 @@ jobs:
           token = os.environ.get("TELEGRAM_TOKEN")
           chat_id = os.environ.get("TELEGRAM_CHAT_ID")
           topic_id = os.environ.get("TELEGRAM_TOPIC_ID")
+          gemini_key = os.environ.get("GEMINI_API_KEY")
 
           if not token or not chat_id:
-              print("Error: TELEGRAM_TOKEN or TELEGRAM_CHAT_ID secret is not set in repository settings.", file=sys.stderr)
+              print("Error: TELEGRAM_TOKEN or TELEGRAM_CHAT_ID secret is not set.", file=sys.stderr)
               sys.exit(1)
 
-          repo = os.environ.get("REPO_NAME", "Unknown Repo")
-          branch = os.environ.get("BRANCH_NAME", "Unknown Branch")
-          pusher = os.environ.get("PUSHER", "")
-          author = os.environ.get("COMMIT_AUTHOR", "")
-          commit_msg = os.environ.get("COMMIT_MSG", "").strip() or "(No commit message)"
-          commit_url = os.environ.get("COMMIT_URL", "")
+          event_name = os.environ.get("EVENT_NAME", "push")
+          repo = os.environ.get("REPO_NAME", "GameDev Project")
 
-          # Determine the display name for who committed / pushed
-          if author and pusher and author.lower() != pusher.lower():
-              committer = f"{author} (@{pusher})"
-          elif author:
-              committer = author
+          # 1. Detect Changed Files & 3D Assets (Git LFS)
+          diff_stat = ""
+          changed_files = []
+          try:
+              diff_output = subprocess.check_output(
+                  ["git", "diff", "--name-only", "HEAD~1", "HEAD"],
+                  stderr=subprocess.DEVNULL
+              ).decode("utf-8", errors="ignore")
+              changed_files = [line.strip() for line in diff_output.splitlines() if line.strip()]
+              
+              diff_stat = subprocess.check_output(
+                  ["git", "diff", "--stat", "HEAD~1", "HEAD"],
+                  stderr=subprocess.DEVNULL
+              ).decode("utf-8", errors="ignore")
+          except Exception:
+              pass
+
+          asset_exts = (".fbx", ".obj", ".blend", ".png", ".tga", ".jpg", ".psd", ".wav", ".mp3", ".prefab", ".mat", ".unity")
+          has_3d_assets = any(f.lower().endswith(asset_exts) for f in changed_files)
+          asset_alert = ""
+          if has_3d_assets:
+              asset_alert = (
+                  "\n\n📦 <b>INVENTORY UPDATE: 3D Assets Detected!</b>\n"
+                  "⚠️ <i>Team reminder:</i> Run <code>git lfs pull</code> after you finish <code>git pull</code> so 3D models and textures load properly!"
+              )
+
+          # 2. Patch Notes & Dramatic Movie Punchline
+          patch_notes = ""
+          punchline = ""
+          fallback_punchlines = [
+              "In a world of null reference exceptions, one developer dared to push to main.",
+              "One does not simply merge into main without conflicts.",
+              "They said it could not compile. They were almost right.",
+              "With great commits comes great responsibility.",
+              "Coming this semester to a screen near you: The Midterm Game.",
+              "In the dark corridors of the maze, the code has awakened.",
+              "Brace yourselves. The pull request has arrived."
+          ]
+
+          if gemini_key and (diff_stat or changed_files):
+              try:
+                  prompt = (
+                      "You are a helpful software assistant for a student game development team. "
+                      "Review the git commit/diff provided.\n"
+                      "1. Under the label 'PATCH_NOTES:', write 1 to 2 clear, practical bullet points summarizing what changed in this commit. Keep it simple and direct.\n"
+                      "2. Under the label 'PUNCHLINE:', write a short, witty 1-sentence dramatic action-movie tagline or humorous punchline based specifically on the changes made in this commit (e.g., 'In a world where enemies ignored walls, one developer dared to add colliders.').\n\n"
+                      f"Changed Files:\n" + "\n".join(changed_files[:15]) + f"\n\nDiff Summary:\n{diff_stat[:1500]}"
+                  )
+                  url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+                  req_data = json.dumps({
+                      "contents": [{"parts": [{"text": prompt}]}]
+                  }).encode("utf-8")
+                  req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
+                  with urllib.request.urlopen(req, timeout=10) as resp:
+                      res_json = json.loads(resp.read().decode("utf-8"))
+                      text_reply = res_json["candidates"][0]["content"]["parts"][0]["text"].strip()
+                      if "PATCH_NOTES:" in text_reply:
+                          parts = text_reply.split("PUNCHLINE:")
+                          notes_part = parts[0].replace("PATCH_NOTES:", "").strip()
+                          if notes_part:
+                              patch_notes = f"\n\n🎮 <b>PATCH NOTES:</b>\n{html.escape(notes_part)}"
+                          if len(parts) > 1 and parts[1].strip():
+                              punchline = f"\n\n━━━━━━━━━━━━━━━━━━━━━━\n🎬 <i>\"{html.escape(parts[1].strip().strip('\"'))}\"</i>"
+                      else:
+                          patch_notes = f"\n\n🎮 <b>PATCH NOTES:</b>\n{html.escape(text_reply)}"
+              except Exception as e:
+                  print(f"Gemini patch notes skipped: {e}", file=sys.stderr)
+
+          if not punchline:
+              punchline = f"\n\n━━━━━━━━━━━━━━━━━━━━━━\n🎬 <i>\"{random.choice(fallback_punchlines)}\"</i>"
+
+          # 3. Construct RPG Quest Log Card
+          button_text = "⚔️ View on GitHub"
+          button_url = ""
+
+          if event_name == "pull_request":
+              action = os.environ.get("PR_ACTION")
+              pr_title = os.environ.get("PR_TITLE", "No Title")
+              pr_number = os.environ.get("PR_NUMBER", "")
+              pr_url = os.environ.get("PR_URL", "")
+              pr_user = os.environ.get("PR_USER", "Unknown")
+              pr_head = os.environ.get("PR_HEAD", "")
+              pr_base = os.environ.get("PR_BASE", "")
+              pr_merged = os.environ.get("PR_MERGED") == "true"
+              button_url = pr_url
+
+              if action == "closed" and pr_merged:
+                  button_text = "🏆 View Merged PR on GitHub"
+                  champion = os.environ.get("PUSHER") or pr_user
+                  text = (
+                      "╭━━━ 🎉 <b>𝐐𝐔𝐄𝐒𝐓 𝐂𝐎𝐌𝐏𝐋𝐄𝐓𝐄𝐃!</b> ━━━╮\n"
+                      f"│ 🏆 <b>Realm:</b> <code>{html.escape(repo)}</code>\n"
+                      "╰━━━━━━━━━━━━━━━━━━━━━━╯\n\n"
+                      f"🌿 <b>Merged Portal:</b> <code>{html.escape(pr_head)}</code> ➔ <code>{html.escape(pr_base)}</code>\n"
+                      f"📜 <b>PR #{pr_number}:</b> <b>{html.escape(pr_title)}</b>\n"
+                      f"👤 <b>Champion:</b> <code>{html.escape(champion)}</code>\n\n"
+                      "👥 <i>Party members:</i> Remember to run <code>git pull</code>!\n"
+                      f"{asset_alert}"
+                      f"{punchline}"
+                  )
+              elif action == "opened":
+                  button_text = "⚔️ Review PR on GitHub"
+                  text = (
+                      "╭━━━ 🔀 <b>𝐐𝐔𝐄𝐒𝐓 𝐋𝐎𝐆: 𝐏𝐔𝐋𝐋 𝐑𝐄𝐐𝐔𝐄𝐒𝐓</b> ━━━╮\n"
+                      f"│ ⚔️ <b>Realm:</b> <code>{html.escape(repo)}</code>\n"
+                      "╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n"
+                      f"🕹️ <b>Initiated by:</b> <code>{html.escape(pr_user)}</code>\n"
+                      f"🗺️ <b>Portal:</b> <code>{html.escape(pr_head)}</code> ➔ <code>{html.escape(pr_base)}</code>\n"
+                      f"📜 <b>PR #{pr_number}:</b> <b>{html.escape(pr_title)}</b>"
+                      f"{patch_notes}"
+                      f"{asset_alert}"
+                      f"{punchline}"
+                  )
+              else:
+                  sys.exit(0)
           else:
-              committer = pusher or "Unknown"
+              branch = os.environ.get("BRANCH_NAME", "Unknown Branch")
+              pusher = os.environ.get("PUSHER", "")
+              author = os.environ.get("COMMIT_AUTHOR", "")
+              commit_msg = os.environ.get("COMMIT_MSG", "").strip() or "(No commit message)"
+              commit_url = os.environ.get("COMMIT_URL", "")
+              button_url = commit_url
+              button_text = "⚔️ Inspect Quest on GitHub"
 
-          text = (
-              "🚀 <b>New Commit Notification</b>\n\n"
-              f"👤 <b>Committed by:</b> {html.escape(committer)}\n"
-              f"🌿 <b>Branch:</b> <code>{html.escape(branch)}</code>\n"
-              f"💬 <b>Message:</b>\n<i>{html.escape(commit_msg)}</i>\n\n"
-              f"📦 <b>Repository:</b> {html.escape(repo)}\n"
-              f"🔗 <b>View Commit:</b> <a href=\"{commit_url}\">Open on GitHub</a>"
-          )
+              if author and pusher and author.lower() != pusher.lower():
+                  committer = f"{author} (@{pusher})"
+              elif author:
+                  committer = author
+              else:
+                  committer = pusher or "Unknown"
 
+              text = (
+                  "╭━━━ 🎮 <b>𝐐𝐔𝐄𝐒𝐓 𝐋𝐎𝐆: 𝐍𝐄𝐖 𝐂𝐎𝐌𝐌𝐈𝐓</b> ━━━╮\n"
+                  f"│ ⚔️ <b>Realm:</b> <code>{html.escape(repo)}</code>\n"
+                  "╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n"
+                  f"🕹️ <b>Player / Dev:</b> <code>{html.escape(committer)}</code>\n"
+                  f"🗺️ <b>Branch:</b> <code>{html.escape(branch)}</code>\n\n"
+                  f"📜 <b>Quest Note:</b>\n<blockquote>{html.escape(commit_msg)}</blockquote>"
+                  f"{patch_notes}"
+                  f"{asset_alert}"
+                  f"{punchline}"
+              )
+
+          # Ensure message does not exceed Telegram'\''s 4096 character limit
+          if len(text) > 3900:
+              text = text[:3850] + "\n\n... <i>(truncated)</i>"
+
+          # 4. Send to Telegram with Inline Keyboard Button
           params = {
               "chat_id": chat_id,
               "text": text,
               "parse_mode": "HTML",
               "disable_web_page_preview": "true"
           }
-
-          # If topic_id is provided, route directly to the specified topic/thread
           if topic_id and topic_id.strip():
               params["message_thread_id"] = topic_id.strip()
+
+          if button_url:
+              reply_markup = {
+                  "inline_keyboard": [
+                      [
+                          {"text": button_text, "url": button_url}
+                      ]
+                  ]
+              }
+              params["reply_markup"] = json.dumps(reply_markup)
 
           url = f"https://api.telegram.org/bot{token}/sendMessage"
           payload = urllib.parse.urlencode(params).encode("utf-8")
