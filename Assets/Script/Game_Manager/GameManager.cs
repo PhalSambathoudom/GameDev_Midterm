@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -5,6 +6,8 @@ using UnityEngine.InputSystem;
 public class GameManager : MonoBehaviour
 {
     [SerializeField] private AudioClip introMusic;
+    [SerializeField] private AudioClip babyDontHurtMeSound;
+    [SerializeField] private AudioClip backgroundMusic;
     [SerializeField, TextArea(5, 12)]
     private string story =
         "You were kidnapped and left inside a maze. Your head-mounted flashlight is your only light.\n\n" +
@@ -17,6 +20,7 @@ public class GameManager : MonoBehaviour
 
     private AudioSource audioSource;
     private bool showStory = true;
+    private bool encounterAudioStarted;
     private GUIStyle titleStyle;
     private GUIStyle storyStyle;
     private GUIStyle buttonStyle;
@@ -55,6 +59,40 @@ public class GameManager : MonoBehaviour
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
+    }
+
+    public void PlaySCP096SeenSequence(AudioClip triggerSound)
+    {
+        if (encounterAudioStarted) return;
+        encounterAudioStarted = true;
+        StartCoroutine(PlayEncounterAudioSequence(triggerSound));
+    }
+
+    private IEnumerator PlayEncounterAudioSequence(AudioClip triggerSound)
+    {
+        audioSource.Stop();
+        if (triggerSound != null)
+        {
+            PlayClip(triggerSound, false);
+            yield return new WaitForSeconds(triggerSound.length);
+        }
+
+        if (babyDontHurtMeSound != null)
+        {
+            PlayClip(babyDontHurtMeSound, false);
+            yield return new WaitForSeconds(babyDontHurtMeSound.length);
+        }
+
+        if (backgroundMusic != null)
+            PlayClip(backgroundMusic, true);
+    }
+
+    private void PlayClip(AudioClip clip, bool loop)
+    {
+        audioSource.Stop();
+        audioSource.clip = clip;
+        audioSource.loop = loop;
+        audioSource.Play();
     }
 
     private bool AnyInputPressed()

@@ -142,6 +142,13 @@ MonoBehaviour:
   attackRange: 1.8
   attackDamage: 3
   attackCooldown: 1.5
+  navMeshSearchRadius: 3
+  triggerSound: {fileID: 8300000, guid: e03e783da0a433b4bb2758b672a4de5a, type: 3}
+  cryingSound: {fileID: 8300000, guid: 528818b55eae97a4285dec1cb407ab6f, type: 3}
+  transitionScreamSound: {fileID: 8300000, guid: 9d105b9c0eff01542a817ea952ed23c2, type: 3}
+  chasingSound: {fileID: 8300000, guid: 79b948a544f59c54896c9724b8654f7c, type: 3}
+  attackSound: {fileID: 8300000, guid: 3a1e6fb5db158ec4cb2a2709e2423734, type: 3}
+  stunnedSound: {fileID: 8300000, guid: 02486187ae383424bbf5b0e31b314f87, type: 3}
 --- !u!136 &70206464
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -161,10 +168,10 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.03296527
-  m_Height: 0.050403684
+  m_Radius: 0.5
+  m_Height: 2
   m_Direction: 1
-  m_Center: {x: -0.00349668, y: -0.01978677, z: -0.008481573}
+  m_Center: {x: 0, y: 1, z: 0}
 --- !u!195 &70206465
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -174,7 +181,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 70206460}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 0.024483696
+  m_Radius: 0.5
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -183,8 +190,8 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 0.010830145
-  m_BaseOffset: 0.0054150727
+  m_Height: 2
+  m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
 --- !u!1001 &115331626
@@ -614,7 +621,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 905418477882636565, guid: efc2b46861c4fb3408bd6afb775008a4, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8336956618898977739, guid: efc2b46861c4fb3408bd6afb775008a4, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1093,6 +1100,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   introMusic: {fileID: 8300000, guid: 275bfdfe5a8002146bd30ca2204f905c, type: 3}
+  babyDontHurtMeSound: {fileID: 8300000, guid: ed27fea7e18058a478a641a011888348, type: 3}
+  backgroundMusic: {fileID: 8300000, guid: f77f147f44afa604aa8c6e106a2c731e, type: 3}
   story: 'You were kidnapped and left inside a maze. Your head-mounted flashlight
     is your only light.
 
@@ -1393,6 +1402,9 @@ MonoBehaviour:
   reviveDelay: 10
   maxRevives: 5
   startPoint: {fileID: 0}
+  deathSound: {fileID: 8300000, guid: 1056f51657355d045b9b7ba969ccb94b, type: 3}
+  reviveCountdownSound: {fileID: 8300000, guid: af41fb1db99c0d34ab50f03abd27b13a, type: 3}
+  respawnSound: {fileID: 8300000, guid: 8f693da31bc2d274d975f04fbaf99604, type: 3}
 --- !u!54 &1292190599
 Rigidbody:
   m_ObjectHideFlags: 0

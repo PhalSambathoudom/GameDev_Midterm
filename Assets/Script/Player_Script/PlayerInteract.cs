@@ -12,6 +12,7 @@ public class PlayerInteract : MonoBehaviour
     [SerializeField] private float attackRadius = 0.5f;
 
     public PlayerHealth Health { get; private set; }
+    public Camera PlayerCamera => playerCamera;
 
     private Player player;
     private InputActionMap playerMap;
@@ -27,16 +28,46 @@ public class PlayerInteract : MonoBehaviour
     {
         Health = GetComponent<PlayerHealth>();
         player = GetComponent<Player>();
-        playerMap = inputActions.FindActionMap("Player", true);
-        interactAction = playerMap.FindAction("Interact", true);
-        attackAction = playerMap.FindAction("Attack", true);
+        if (Health == null || player == null)
+        {
+            Debug.LogError("PlayerInteract requires Player and PlayerHealth on the same object.", this);
+            enabled = false;
+            return;
+        }
+
+        if (playerCamera == null)
+        {
+            Debug.LogError("Assign the Player Camera to PlayerInteract.", this);
+            enabled = false;
+            return;
+        }
+
+        if (inputActions == null)
+        {
+            Debug.LogError("Assign the PlayerInteract Input Actions asset.", this);
+            enabled = false;
+            return;
+        }
+
+        playerMap = inputActions.FindActionMap("Player", false);
+        interactAction = playerMap != null ? playerMap.FindAction("Interact", false) : null;
+        attackAction = playerMap != null ? playerMap.FindAction("Attack", false) : null;
+        if (interactAction == null || attackAction == null)
+        {
+            Debug.LogError("The Input Actions asset must contain Player/Interact and Player/Attack actions.", this);
+            enabled = false;
+            return;
+        }
+
+        if (handSlot == null)
+            Debug.LogWarning("Assign the Hand Slot transform to PlayerInteract.", this);
     }
 
-    void OnEnable() => playerMap.Enable();
-    void OnDisable() { looking = null; playerMap.Disable(); }
+    void OnDisable() => looking = null;
 
     void Update()
     {
+        if (Health == null || playerCamera == null || interactAction == null || attackAction == null) return;
         if (Health.IsDead) { looking = null; return; }
 
         looking = null;
@@ -52,6 +83,13 @@ public class PlayerInteract : MonoBehaviour
 
     public void PickUp(WeaponPickup newWeapon)
     {
+        if (newWeapon == null) return;
+        if (handSlot == null)
+        {
+            Debug.LogError("Cannot equip a weapon because PlayerInteract has no Hand Slot assigned.", this);
+            return;
+        }
+
         // inventory full -> swap: drop the current one where the new one was
         if (weapon != null && inventorySize <= 1)
         {
@@ -79,6 +117,7 @@ public class PlayerInteract : MonoBehaviour
 
     void OnGUI()
     {
+        if (Health == null || player == null) return;
         CreateHudStyles();
         float scale = Mathf.Clamp(Screen.height / 900f, 0.7f, 1.3f);
 

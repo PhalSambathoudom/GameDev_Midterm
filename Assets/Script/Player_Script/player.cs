@@ -40,20 +40,50 @@ public class Player : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         col = GetComponent<CapsuleCollider>();
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.freezeRotation = true;
         stamina = maxStamina;
 
-        playerMap = inputActions.FindActionMap("Player", true);
-        moveAction = playerMap.FindAction("Move", true);
-        sprintAction = playerMap.FindAction("Sprint", true);
-        jumpAction = playerMap.FindAction("Jump", true);
+        if (inputActions == null)
+        {
+            Debug.LogError("Assign the Player Input Actions asset.", this);
+            enabled = false;
+            return;
+        }
+
+        playerMap = inputActions.FindActionMap("Player", false);
+        if (playerMap == null)
+        {
+            Debug.LogError("The Input Actions asset is missing the Player action map.", this);
+            enabled = false;
+            return;
+        }
+
+        moveAction = playerMap.FindAction("Move", false);
+        sprintAction = playerMap.FindAction("Sprint", false);
+        jumpAction = playerMap.FindAction("Jump", false);
+        if (moveAction == null || sprintAction == null || jumpAction == null)
+        {
+            Debug.LogError("The Player action map must contain Move, Sprint, and Jump actions.", this);
+            enabled = false;
+        }
     }
 
-    void OnEnable() => playerMap.Enable();
-    void OnDisable() { moveInput = Vector2.zero; playerMap.Disable(); }
+    void OnEnable()
+    {
+        if (playerMap != null) playerMap.Enable();
+    }
+
+    void OnDisable()
+    {
+        moveInput = Vector2.zero;
+        jumpQueued = false;
+        if (playerMap != null) playerMap.Disable();
+    }
 
     void Update()
     {
+        if (moveAction == null || sprintAction == null || jumpAction == null) return;
         moveInput = moveAction.ReadValue<Vector2>();
         if (jumpAction.WasPressedThisFrame()) jumpQueued = true;
         HandleStamina();
@@ -104,8 +134,8 @@ public class Player : MonoBehaviour
     public void TeleportTo(Vector3 position, Quaternion rotation)
     {
         rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
         rb.position = position;
         rb.rotation = rotation;
-        transform.SetPositionAndRotation(position, rotation);
     }
 }
