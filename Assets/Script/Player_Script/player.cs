@@ -35,6 +35,8 @@ public class Player : MonoBehaviour
 
     public float Stamina => stamina;
     public float MaxStamina => maxStamina;
+    private bool frozen;
+    public bool IsFrozen => frozen;
 
     void Awake()
     {
@@ -78,12 +80,17 @@ public class Player : MonoBehaviour
     {
         moveInput = Vector2.zero;
         jumpQueued = false;
+    }
+
+    void OnDestroy()
+    {
         if (playerMap != null) playerMap.Disable();
     }
 
     void Update()
     {
         if (moveAction == null || sprintAction == null || jumpAction == null) return;
+        if (frozen) { moveInput = Vector2.zero; jumpQueued = false; return; }
         moveInput = moveAction.ReadValue<Vector2>();
         if (jumpAction.WasPressedThisFrame()) jumpQueued = true;
         HandleStamina();
@@ -111,6 +118,11 @@ public class Player : MonoBehaviour
 
     private void MovePlayer()
     {
+        if (frozen)
+        {
+            rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+            return;
+        }
         Vector3 dir = transform.right * moveInput.x + transform.forward * moveInput.y;
         if (dir.sqrMagnitude > 1f) dir.Normalize();
 
@@ -129,6 +141,16 @@ public class Player : MonoBehaviour
     {
         float dist = col.bounds.extents.y + groundCheckExtra;
         return Physics.Raycast(col.bounds.center, Vector3.down, dist, groundMask, QueryTriggerInteraction.Ignore);
+    }
+
+    public void SetFrozen(bool value)
+    {
+        frozen = value;
+        if (value)
+        {
+            moveInput = Vector2.zero;
+            jumpQueued = false;
+        }
     }
 
     public void TeleportTo(Vector3 position, Quaternion rotation)

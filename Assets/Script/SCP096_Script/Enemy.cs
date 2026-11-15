@@ -56,7 +56,8 @@ public class Enemy : MonoBehaviour
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 1f;
-        audioSource.minDistance = 2f;
+        audioSource.rolloffMode = AudioRolloffMode.Linear;
+        audioSource.minDistance = 6f;
         audioSource.maxDistance = detectionRange;
         viewRenderer = GetComponentInChildren<Renderer>();
         if (target == null) target = FindFirstObjectByType<PlayerHealth>();
@@ -82,6 +83,13 @@ public class Enemy : MonoBehaviour
 
         foreach (var smr in GetComponentsInChildren<SkinnedMeshRenderer>(true))
             smr.updateWhenOffscreen = true;
+
+        Collider playerCollider = target != null ? target.GetComponent<Collider>() : null;
+        if (playerCollider != null)
+        {
+            foreach (var c in GetComponentsInChildren<Collider>())
+                Physics.IgnoreCollision(playerCollider, c, true);
+        }
     }
 
     void Update()

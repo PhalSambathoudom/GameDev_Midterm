@@ -19,6 +19,7 @@ public class PlayerHealth : MonoBehaviour
 
     private Player player;
     private AudioSource audioSource;
+    private AudioSource countdownSource;
     private float hp;
     private float lastHitTime = -999f;
     private float reviveEndTime;
@@ -52,6 +53,9 @@ public class PlayerHealth : MonoBehaviour
             go.transform.SetPositionAndRotation(transform.position, transform.rotation);
             startPoint = go.transform;
         }
+        countdownSource = gameObject.AddComponent<AudioSource>();
+countdownSource.playOnAwake = false;
+countdownSource.spatialBlend = 0f;
     }
 
     void Update()
@@ -91,25 +95,31 @@ public class PlayerHealth : MonoBehaviour
     }
 
     private IEnumerator DieRoutine()
-    {
-        isDead = true;
-        Debug.Log($"[{Time.timeSinceLevelLoad:F2}s] Player death routine started.", this);
-        reviveEndTime = Time.realtimeSinceStartup + reviveDelay;
-        if (player != null) player.enabled = false;
+{
+    isDead = true;
+    Debug.Log($"[{Time.timeSinceLevelLoad:F2}s] Player death routine started.", this);
+    reviveEndTime = Time.realtimeSinceStartup + reviveDelay;
+    if (player != null) player.SetFrozen(true);
 
-        float elapsed = 0f;
-        if (deathSound != null)
+    try
+    {
+        float countdownLength = reviveCountdownSound != null ? reviveCountdownSound.length : 0f;
+        float countdownStart = Mathf.Max(0f, reviveDelay - countdownLength);
+
+        if (countdownStart > 0f) yield return new WaitForSecondsRealtime(countdownStart);
+
+        if (reviveCountdownSound != null)
         {
-            elapsed = Mathf.Min(deathSound.length, reviveDelay);
-            if (elapsed > 0f) yield return new WaitForSecondsRealtime(elapsed);
+            countdownSource.clip = reviveCountdownSound;
+            countdownSource.loop = false;
+            countdownSource.Play();
         }
 
-        if (reviveCountdownSound != null && elapsed < reviveDelay)
-            PlayClip(reviveCountdownSound);
-
-        float remaining = reviveDelay - elapsed;
+        float remaining = reviveDelay - countdownStart;
         if (remaining > 0f) yield return new WaitForSecondsRealtime(remaining);
+
         audioSource.Stop();
+        countdownSource.Stop();
 
         if (HasFlag && revivesUsed < maxRevives)
         {
@@ -126,15 +136,15 @@ public class PlayerHealth : MonoBehaviour
         }
 
         hp = maxHp;
-        isDead = false;
-        if (player != null)
-        {
-            player.enabled = true;
-            invulnerableUntil = Time.time + respawnProtection;
-        }
+        invulnerableUntil = Time.time + respawnProtection;
         PlayClip(respawnSound);
     }
-
+    finally
+    {
+        isDead = false;
+        if (player != null) player.SetFrozen(false);
+    }
+}
     private void PlayClip(AudioClip clip)
     {
         if (clip == null) return;
