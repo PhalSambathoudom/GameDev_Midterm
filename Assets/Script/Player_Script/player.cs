@@ -57,12 +57,6 @@ public class Player : MonoBehaviour
     void FixedUpdate()
     {
         MovePlayer();
-        Jump();
-
-        if (hasFlag)
-        {
-            // Implement the logic for auto healing
-        }
     }
 
     [System.Obsolete]
@@ -75,19 +69,15 @@ public class Player : MonoBehaviour
 
         float currentSpeed = isSprinting ? sprintSpeed : moveSpeed;
 
-        Vector3 targetVelocity = moveDirection * currentSpeed;
-        targetVelocity.y = rb.velocity.y;
-
-        rb.velocity = targetVelocity;
-    }
-
-    [System.Obsolete]
-    private void Jump()
-    {
         if (Input.GetKeyDown(KeyCode.Space) && Mathf.Abs(rb.velocity.y) < 0.001f)
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
+
+        Vector3 targetVelocity = moveDirection * currentSpeed;
+        targetVelocity.y = rb.velocity.y;
+
+        rb.velocity = targetVelocity;
     }
 }
 
