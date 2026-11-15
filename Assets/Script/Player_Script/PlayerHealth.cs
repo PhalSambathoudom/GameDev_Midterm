@@ -17,6 +17,7 @@ public class PlayerHealth : MonoBehaviour
     private Player player;
     private float hp;
     private float lastHitTime = -999f;
+    private float reviveEndTime;
     private bool isDead;
     private int revivesUsed;
     private Vector3 checkpointPos;
@@ -24,6 +25,7 @@ public class PlayerHealth : MonoBehaviour
 
     public bool HasFlag { get; private set; }
     public bool IsDead => isDead;
+    public float ReviveTimeRemaining => isDead ? Mathf.Max(0f, reviveEndTime - Time.time) : 0f;
     public float Hp => hp;
     public float MaxHp => maxHp;
 
@@ -66,6 +68,7 @@ public class PlayerHealth : MonoBehaviour
     private IEnumerator DieRoutine()
     {
         isDead = true;
+        reviveEndTime = Time.time + reviveDelay;
         if (player != null) player.enabled = false;
 
         yield return new WaitForSeconds(reviveDelay);
