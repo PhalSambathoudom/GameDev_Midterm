@@ -4,13 +4,14 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     [SerializeField] private AudioClip introMusic;
-    [SerializeField, TextArea(5, 12)] private string story =
+    [SerializeField, TextArea(5, 12)]
+    private string story =
         "You were kidnapped and left inside a maze. Your head-mounted flashlight is your only light.\n\n" +
-        "Find the exit door. It appears randomly along the edge of the maze every 15 minutes after " +
+        "Find the exit door. It appears randomly open around the maze at a fixed position every 15 minutes after " +
         "the previous door is closed. Use tactics and your weapon to stun the enemy and buy yourself " +
         "time.\n\n" +
-        "Reach the core of the maze to claim a flag checkpoint. After that, you can automatically " +
-        "revive at the checkpoint after 10 seconds up to three times. If you die again, you return " +
+        "Reach the core of the maze to claim a flag checkpoint. After placing the flag, you can automatically " +
+        "revive at the checkpoint after 10 seconds up to five times. If you die again, you return " +
         "to the starting point.";
 
     private AudioSource audioSource;
@@ -38,6 +39,9 @@ public class GameManager : MonoBehaviour
         {
             Debug.LogWarning("Assign the Intro.mp3 clip to the GameManager's Intro Music field.", this);
         }
+        Time.timeScale = 0f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     private void OnGUI()
@@ -82,6 +86,9 @@ public class GameManager : MonoBehaviour
         {
             showStory = false;
             audioSource.Stop();
+            Time.timeScale = 1f;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
 
         GUI.color = previousColor;
@@ -117,8 +124,8 @@ public class GameManager : MonoBehaviour
         }
 
         float scale = Mathf.Clamp(Screen.height / 900f, 0.75f, 1.4f);
-        titleStyle.fontSize = Mathf.RoundToInt(54f * scale);
-        storyStyle.fontSize = Mathf.RoundToInt(28f * scale);
-        buttonStyle.fontSize = Mathf.RoundToInt(24f * scale);
+        titleStyle.fontSize = Mathf.RoundToInt(42f * scale);
+        storyStyle.fontSize = Mathf.RoundToInt(24f * scale);
+        buttonStyle.fontSize = Mathf.RoundToInt(20f * scale);
     }
 }
