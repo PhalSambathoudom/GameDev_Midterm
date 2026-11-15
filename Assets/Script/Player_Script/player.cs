@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 public class Player : MonoBehaviour
 {
     [Header("Input")]
-    [SerializeField] private InputActionAsset inputActions; 
+    [SerializeField] private InputActionAsset inputActions;
 
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 5f;

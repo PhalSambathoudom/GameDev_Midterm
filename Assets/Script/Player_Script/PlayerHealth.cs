@@ -6,13 +6,13 @@ public class PlayerHealth : MonoBehaviour
 {
     [Header("Health")]
     [SerializeField] private float maxHp = 15f;
-    [SerializeField] private float autoHealRate = 1f;      
-    [SerializeField] private float healDelayAfterHit = 3f; 
+    [SerializeField] private float autoHealRate = 1f;
+    [SerializeField] private float healDelayAfterHit = 3f;
 
     [Header("Revive (from your story)")]
     [SerializeField] private float reviveDelay = 10f;
     [SerializeField] private int maxRevives = 3;
-    [SerializeField] private Transform startPoint;        
+    [SerializeField] private Transform startPoint;
 
     private Player player;
     private float hp;
@@ -30,6 +30,7 @@ public class PlayerHealth : MonoBehaviour
     void Awake()
     {
         player = GetComponent<Player>();
+        if (player == null) Debug.LogError("PlayerHealth needs the Player script on the SAME object: " + name, this);
         hp = maxHp;
         if (startPoint == null)
         {
@@ -65,7 +66,7 @@ public class PlayerHealth : MonoBehaviour
     private IEnumerator DieRoutine()
     {
         isDead = true;
-        player.enabled = false; 
+        if (player != null) player.enabled = false;
 
         yield return new WaitForSeconds(reviveDelay);
 
@@ -79,11 +80,11 @@ public class PlayerHealth : MonoBehaviour
             // out of revives -> back to start, progress reset
             HasFlag = false;
             revivesUsed = 0;
-            player.TeleportTo(startPoint.position, startPoint.rotation);
+            if (player != null) player.TeleportTo(startPoint.position, startPoint.rotation);
         }
 
         hp = maxHp;
         isDead = false;
-        player.enabled = true;
+        if (player != null) player.enabled = true;
     }
 }
