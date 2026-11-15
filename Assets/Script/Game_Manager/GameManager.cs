@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(AudioSource))]
 public class GameManager : MonoBehaviour
@@ -44,6 +45,27 @@ public class GameManager : MonoBehaviour
         Cursor.visible = true;
     }
 
+    private void Update()
+    {
+        if (showStory && AnyInputPressed())
+        {
+            showStory = false;
+            audioSource.Stop();
+            Time.timeScale = 1f;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+    }
+
+    private bool AnyInputPressed()
+    {
+        if (Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame) return true;
+        if (Mouse.current != null &&
+            (Mouse.current.leftButton.wasPressedThisFrame || Mouse.current.rightButton.wasPressedThisFrame)) return true;
+        if (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame) return true;
+        return false;
+    }
+
     private void OnGUI()
     {
         if (!showStory)
@@ -75,21 +97,14 @@ public class GameManager : MonoBehaviour
             story,
             storyStyle);
 
-        float buttonWidth = 280f * Mathf.Clamp(Screen.height / 900f, 0.75f, 1.4f);
-        float buttonHeight = 60f * Mathf.Clamp(Screen.height / 900f, 0.75f, 1.4f);
+        float buttonWidth = 380f * Mathf.Clamp(Screen.height / 900f, 0.75f, 1.4f);
+        float buttonHeight = 48f * Mathf.Clamp(Screen.height / 900f, 0.75f, 1.4f);
         Rect button = new Rect(
             panel.x + (panel.width - buttonWidth) * 0.5f,
             panel.yMax - buttonHeight - 24f,
             buttonWidth,
             buttonHeight);
-        if (GUI.Button(button, "Continue", buttonStyle))
-        {
-            showStory = false;
-            audioSource.Stop();
-            Time.timeScale = 1f;
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
+        GUI.Label(button, "Press any key to close", buttonStyle);
 
         GUI.color = previousColor;
     }
@@ -123,9 +138,9 @@ public class GameManager : MonoBehaviour
             };
         }
 
-        float scale = Mathf.Clamp(Screen.height / 900f, 0.75f, 1.4f);
-        titleStyle.fontSize = Mathf.RoundToInt(42f * scale);
-        storyStyle.fontSize = Mathf.RoundToInt(24f * scale);
-        buttonStyle.fontSize = Mathf.RoundToInt(20f * scale);
+        float scale = Mathf.Clamp(Screen.height / 900f, 0.75f, 1.3f);
+        titleStyle.fontSize = Mathf.RoundToInt(26f * scale);
+        storyStyle.fontSize = Mathf.RoundToInt(18f * scale);
+        buttonStyle.fontSize = Mathf.RoundToInt(13f * scale);
     }
 }
