@@ -117,7 +117,7 @@ public class PlayerInteract : MonoBehaviour
 
     void OnGUI()
     {
-        if (Health == null || player == null) return;
+        if (Health == null || player == null || Health.IsGameOver) return;
         CreateHudStyles();
         float scale = Mathf.Clamp(Screen.height / 900f, 0.7f, 1.3f);
 

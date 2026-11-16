@@ -36,7 +36,7 @@ public class Flag : MonoBehaviour, IInteractable
         }
 
         // Set the player's checkpoint at this flag.
-        health.ClaimFlag(transform.position, transform.rotation);
+        health.ClaimFlag(player.transform.position, player.transform.rotation);
 
         // Hide the flag after collection.
         Collect();

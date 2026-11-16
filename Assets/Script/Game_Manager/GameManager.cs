@@ -23,9 +23,14 @@ public class GameManager : MonoBehaviour
     private AudioSource audioSource;
     private bool showStory = true;
     private bool encounterAudioStarted;
+    private bool isGameOver;
+    private int playerDeathCount;
     private GUIStyle titleStyle;
     private GUIStyle storyStyle;
     private GUIStyle buttonStyle;
+    private GUIStyle gameOverStyle;
+
+    private const int DeathsBeforeGameOver = 3;
 
     private void Awake()
     {
@@ -53,6 +58,8 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
+        if (isGameOver) return;
+
         if (showStory && AnyInputPressed())
         {
             showStory = false;
@@ -61,6 +68,21 @@ public class GameManager : MonoBehaviour
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
+    }
+
+    public bool RegisterPlayerDeath()
+    {
+        if (isGameOver) return true;
+
+        playerDeathCount++;
+        if (playerDeathCount < DeathsBeforeGameOver) return false;
+
+        isGameOver = true;
+        audioSource.Stop();
+        Time.timeScale = 0f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        return true;
     }
 
     public void PlaySCP096SeenSequence(AudioClip triggerSound)
@@ -114,6 +136,12 @@ public class GameManager : MonoBehaviour
 
     private void OnGUI()
     {
+        if (isGameOver)
+        {
+            DrawGameOver();
+            return;
+        }
+
         if (!showStory)
         {
             return;
@@ -152,6 +180,27 @@ public class GameManager : MonoBehaviour
             buttonHeight);
         GUI.Label(button, "Press any key to close", buttonStyle);
 
+        GUI.color = previousColor;
+    }
+
+    private void DrawGameOver()
+    {
+        if (gameOverStyle == null)
+        {
+            gameOverStyle = new GUIStyle(GUI.skin.label)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = FontStyle.Bold
+            };
+        }
+
+        gameOverStyle.fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 8f, 48f, 120f));
+
+        Color previousColor = GUI.color;
+        GUI.color = Color.black;
+        GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), Texture2D.whiteTexture);
+        GUI.color = Color.red;
+        GUI.Label(new Rect(0f, 0f, Screen.width, Screen.height), "GAMEOVER!", gameOverStyle);
         GUI.color = previousColor;
     }
 

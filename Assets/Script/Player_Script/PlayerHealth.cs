@@ -18,6 +18,7 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] private AudioClip respawnSound;
 
     private Player player;
+    private GameManager gameManager;
     private AudioSource audioSource;
     private AudioSource countdownSource;
     private float hp;
@@ -30,6 +31,7 @@ public class PlayerHealth : MonoBehaviour
 
     public bool HasFlag { get; private set; }
     public bool IsDead => isDead;
+    public bool IsGameOver { get; private set; }
     public float ReviveTimeRemaining => isDead ? Mathf.Max(0f, reviveEndTime - Time.realtimeSinceStartup) : 0f;
     public float Hp => hp;
     public float MaxHp => maxHp;
@@ -40,6 +42,7 @@ public class PlayerHealth : MonoBehaviour
     void Awake()
     {
         player = GetComponent<Player>();
+        gameManager = FindFirstObjectByType<GameManager>();
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false;
@@ -83,14 +86,22 @@ countdownSource.spatialBlend = 0f;
         if (hp <= 0f)
         {
             PlayClip(deathSound);
+            if (gameManager != null && gameManager.RegisterPlayerDeath())
+            {
+                IsGameOver = true;
+                isDead = true;
+                if (player != null) player.SetFrozen(true);
+                return;
+            }
+
             StartCoroutine(DieRoutine());
         }
     }
 
-    public void ClaimFlag(Vector3 flagPosition, Quaternion facing)
+    public void ClaimFlag(Vector3 playerPosition, Quaternion facing)
     {
         HasFlag = true;
-        checkpointPos = flagPosition + Vector3.up * 0.1f;
+        checkpointPos = playerPosition;
         checkpointRot = facing;
     }
 
