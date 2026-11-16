@@ -20,26 +20,28 @@ public class Flag : MonoBehaviour, IInteractable
         originalRotation = transform.rotation;
     }
 
+
     // Called when the player presses E.
     public void Interact(PlayerInteract player)
     {
         if (claimed || player == null)
             return;
 
-        PlayerFlagCheckpoint checkpoint =
-            player.GetComponent<PlayerFlagCheckpoint>();
+        PlayerHealth health = player.Health;
 
-        if (checkpoint == null)
+        if (health == null)
         {
-            Debug.LogError(
-                "PlayerFlagCheckpoint is missing from Player!"
-            );
-
+            Debug.LogError("PlayerHealth is missing from Player!");
             return;
         }
 
-        checkpoint.TryCollectFlag(this);
+        // Set the player's checkpoint at this flag.
+        health.ClaimFlag(transform.position, transform.rotation);
+
+        // Hide the flag after collection.
+        Collect();
     }
+
 
     // Hide the flag after collection.
     public void Collect()

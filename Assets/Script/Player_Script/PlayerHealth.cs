@@ -90,7 +90,7 @@ countdownSource.spatialBlend = 0f;
     public void ClaimFlag(Vector3 flagPosition, Quaternion facing)
     {
         HasFlag = true;
-        checkpointPos = flagPosition + Vector3.up * 1f;
+        checkpointPos = flagPosition + Vector3.up * 0.1f;
         checkpointRot = facing;
     }
 
