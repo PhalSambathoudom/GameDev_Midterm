@@ -1,16 +1,71 @@
+
 using UnityEngine;
 
-// Put on the flag prefab at the core of the maze (needs a Collider).
 public class Flag : MonoBehaviour, IInteractable
 {
     private bool claimed;
-    public string Prompt => claimed ? "" : "Press E to claim the flag";
 
+    private Vector3 originalPosition;
+    private Quaternion originalRotation;
+
+    public bool CanBeCollected => !claimed;
+
+    public string Prompt =>
+        claimed ? "" : "Press E to collect the flag";
+
+    private void Awake()
+    {
+        // Remember the original flag position.
+        originalPosition = transform.position;
+        originalRotation = transform.rotation;
+    }
+
+    // Called when the player presses E.
     public void Interact(PlayerInteract player)
     {
-        if (claimed) return;
+        if (claimed || player == null)
+            return;
+
+        PlayerFlagCheckpoint checkpoint =
+            player.GetComponent<PlayerFlagCheckpoint>();
+
+        if (checkpoint == null)
+        {
+            Debug.LogError(
+                "PlayerFlagCheckpoint is missing from Player!"
+            );
+
+            return;
+        }
+
+        checkpoint.TryCollectFlag(this);
+    }
+
+    // Hide the flag after collection.
+    public void Collect()
+    {
+        if (claimed)
+            return;
+
         claimed = true;
-        player.Health.ClaimFlag(transform.position, player.transform.rotation);
-        // the flag stays in the maze as the checkpoint marker
+
+        gameObject.SetActive(false);
+
+        Debug.Log("Flag collected!");
+    }
+
+    // Return the flag to its original position.
+    public void ReturnToOriginalPosition()
+    {
+        transform.SetPositionAndRotation(
+            originalPosition,
+            originalRotation
+        );
+
+        claimed = false;
+
+        gameObject.SetActive(true);
+
+        Debug.Log("Flag returned to original position!");
     }
 }
