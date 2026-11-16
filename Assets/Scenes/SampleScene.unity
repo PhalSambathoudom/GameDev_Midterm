@@ -2332,7 +2332,7 @@ MonoBehaviour:
   reviveCountdownSound: {fileID: 8300000, guid: af41fb1db99c0d34ab50f03abd27b13a, type: 3}
   respawnSound: {fileID: 8300000, guid: 8f693da31bc2d274d975f04fbaf99604, type: 3}
   fallLimit: 15
-  respawnProtection: 10
+  respawnProtection: 3
 --- !u!114 &1077238879
 MonoBehaviour:
   m_ObjectHideFlags: 0
