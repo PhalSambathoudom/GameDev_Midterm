@@ -2352,7 +2352,7 @@ MonoBehaviour:
   maxStamina: 100
   exhaustionThreshold: 20
   staminaDrainRate: 10
-  staminaRegenRate: 5
+  staminaRegenRate: 2
   groundMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -2444,15 +2444,14 @@ MonoBehaviour:
     is your only light.
 
 
-    Find the exit door. It appears randomly open around
-    the maze at a fixed position every 15 minutes after the previous door is closed.
-    Use tactics and your weapon to stun the enemy and buy yourself time.
+    Find the exit door. It appears in the maze at a fixed
+    position. Use tactics to find the way to the door.
 
 
-    Reach
-    the core of the maze to claim a flag checkpoint. After placing the flag, you
-    can automatically revive at the checkpoint after 10 seconds up to five times.
-    If you die again, you return to the starting point.'
+    Reach the core of the
+    maze to claim a flag to get checkpoint. You can automatically revive at the checkpoint
+    after 10 seconds up to 3 times. If you die again, you return to the starting
+    point.'
 --- !u!82 &1216189891
 AudioSource:
   m_ObjectHideFlags: 0
@@ -2734,7 +2733,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   target: {fileID: 0}
   detectionRange: 10000
-  rageDelay: 30
+  rageDelay: 20
   viewAngle: 30
   viewTargetOffset: {x: 0, y: 1.2, z: 0}
   triggerSound: {fileID: 8300000, guid: e03e783da0a433b4bb2758b672a4de5a, type: 3}
@@ -2743,11 +2742,13 @@ MonoBehaviour:
   chasingSound: {fileID: 8300000, guid: 79b948a544f59c54896c9724b8654f7c, type: 3}
   attackSound: {fileID: 8300000, guid: 3a1e6fb5db158ec4cb2a2709e2423734, type: 3}
   stunnedSound: {fileID: 8300000, guid: 02486187ae383424bbf5b0e31b314f87, type: 3}
-  chaseSpeed: 4
+  chasingSoundVolume: 0.75
+  chaseSpeed: 6
   navMeshSearchRadius: 3
   attackRange: 1.8
   attackDamage: 3
   attackCooldown: 1.5
+  screamVolume: 0.35
 --- !u!195 &1495519537
 NavMeshAgent:
   m_ObjectHideFlags: 0

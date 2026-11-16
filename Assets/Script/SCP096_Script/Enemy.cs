@@ -20,6 +20,7 @@ public class Enemy : MonoBehaviour
     [SerializeField] private AudioClip chasingSound;
     [SerializeField] private AudioClip attackSound;
     [SerializeField] private AudioClip stunnedSound;
+    [SerializeField, Range(0f, 1f)] private float chasingSoundVolume = 0.75f;
 
     [Header("Movement")]
     [SerializeField] private float chaseSpeed = 4f;
@@ -32,10 +33,12 @@ public class Enemy : MonoBehaviour
 
     private NavMeshAgent agent;
     private AudioSource audioSource;
+    private AudioSource chasingAudioSource;
     private PlayerInteract playerInteract;
     private GameManager gameManager;
     private Renderer viewRenderer;
     private AudioClip activeLoop;
+    private AudioSource activeLoopSource;
     private float nextAttackTime;
     private float stunnedUntil;
     private float nextPathTime;
@@ -46,6 +49,7 @@ public class Enemy : MonoBehaviour
     private bool warnedAboutDestination;
 
     public bool IsStunned => Time.time < stunnedUntil;
+    [SerializeField, Range(0f, 1f)] private float screamVolume = 0.35f;
 
     void Awake()
     {
@@ -59,6 +63,13 @@ public class Enemy : MonoBehaviour
         audioSource.rolloffMode = AudioRolloffMode.Linear;
         audioSource.minDistance = 6f;
         audioSource.maxDistance = detectionRange;
+        chasingAudioSource = gameObject.AddComponent<AudioSource>();
+        chasingAudioSource.playOnAwake = false;
+        chasingAudioSource.spatialBlend = 1f;
+        chasingAudioSource.rolloffMode = AudioRolloffMode.Linear;
+        chasingAudioSource.minDistance = 6f;
+        chasingAudioSource.maxDistance = detectionRange;
+        chasingAudioSource.volume = chasingSoundVolume;
         viewRenderer = GetComponentInChildren<Renderer>();
         if (target == null) target = FindFirstObjectByType<PlayerHealth>();
         if (target != null) playerInteract = target.GetComponent<PlayerInteract>();
@@ -136,7 +147,7 @@ public class Enemy : MonoBehaviour
             isEnraged = true;
             Debug.Log($"[{Time.timeSinceLevelLoad:F2}s] SCP096 enraged", this);
             PlayLoop(chasingSound);
-            PlaySound(transitionScreamSound);
+            PlaySound(transitionScreamSound, screamVolume);
         }
         else
         {
@@ -233,28 +244,35 @@ public class Enemy : MonoBehaviour
             return;
         }
 
-        if (activeLoop == clip && audioSource.isPlaying) return;
+        AudioSource loopSource = clip == chasingSound ? chasingAudioSource : audioSource;
+        if (activeLoop == clip && activeLoopSource == loopSource && loopSource.isPlaying) return;
 
-        audioSource.Stop();
-        audioSource.clip = clip;
-        audioSource.loop = true;
+        if (activeLoopSource != null)
+            activeLoopSource.Stop();
+        loopSource.clip = clip;
+        loopSource.loop = true;
         activeLoop = clip;
-        audioSource.Play();
+        activeLoopSource = loopSource;
+        loopSource.Play();
     }
 
     private void StopLoop()
     {
         if (activeLoop == null) return;
 
-        audioSource.Stop();
-        audioSource.clip = null;
-        audioSource.loop = false;
+        if (activeLoopSource != null)
+        {
+            activeLoopSource.Stop();
+            activeLoopSource.clip = null;
+            activeLoopSource.loop = false;
+        }
         activeLoop = null;
+        activeLoopSource = null;
     }
 
-    private void PlaySound(AudioClip clip)
+    private void PlaySound(AudioClip clip, float volume = 1f)
     {
-        if (clip != null) audioSource.PlayOneShot(clip);
+        if (clip != null) audioSource.PlayOneShot(clip, volume);
     }
 
     public void Stun(float seconds)

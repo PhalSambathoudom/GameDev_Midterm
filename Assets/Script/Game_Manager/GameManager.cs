@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
 
 [RequireComponent(typeof(AudioSource))]
 public class GameManager : MonoBehaviour
@@ -73,7 +75,7 @@ public class GameManager : MonoBehaviour
         audioSource.Stop();
         if (triggerSound != null)
         {
-            PlayClip(triggerSound, false);
+            PlayClip(triggerSound, false, 0.4f);
             yield return new WaitForSeconds(triggerSound.length);
         }
 
@@ -89,7 +91,13 @@ public class GameManager : MonoBehaviour
 
     private void PlayClip(AudioClip clip, bool loop)
     {
+        PlayClip(clip, loop, 1f);
+    }
+
+    private void PlayClip(AudioClip clip, bool loop, float volume)
+    {
         audioSource.Stop();
+        audioSource.volume = volume;
         audioSource.clip = clip;
         audioSource.loop = loop;
         audioSource.Play();
