@@ -2346,13 +2346,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player
   inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  moveSpeed: 5
-  sprintSpeed: 7.5
+  moveSpeed: 4
+  sprintSpeed: 6.5
   jumpForce: 5
   maxStamina: 100
   exhaustionThreshold: 20
   staminaDrainRate: 10
-  staminaRegenRate: 2
+  staminaRegenRate: 1
   groundMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -2733,7 +2733,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   target: {fileID: 0}
   detectionRange: 10000
-  rageDelay: 20
+  rageDelay: 10
   viewAngle: 30
   viewTargetOffset: {x: 0, y: 1.2, z: 0}
   triggerSound: {fileID: 8300000, guid: e03e783da0a433b4bb2758b672a4de5a, type: 3}
@@ -2759,8 +2759,8 @@ NavMeshAgent:
   m_Enabled: 1
   m_AgentTypeID: 0
   m_Radius: 0.5
-  m_Speed: 3.5
-  m_Acceleration: 8
+  m_Speed: 5
+  m_Acceleration: 10
   avoidancePriority: 50
   m_AngularSpeed: 120
   m_StoppingDistance: 0
