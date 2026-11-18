@@ -70,8 +70,8 @@ Platform: [Windows or macOS]
 
 | Member | Role | Contributions |
 |--------|------|---------------|
-| Ichikiru& Oral | Game Designer | Game rules, game concept, finding assets, map layout, scene creation |
-| The Void & Atomic | Developer | scripting games, logic games, debugs, testers, updates |
+| Phal Sambathoudom & Din Norakvannada | Game Designer | Game rules, game concept, finding assets, map layout, scene creation |
+| Poch Seavmeng & Seng Namkea | Developer | scripting games, logic games, debugs, testers, updates |
 
 ## Credits & References
 
