@@ -2355,7 +2355,7 @@ MonoBehaviour:
   maxStamina: 100
   exhaustionThreshold: 20
   staminaDrainRate: 10
-  staminaRegenRate: 1
+  staminaRegenRate: 5
   groundMask:
     serializedVersion: 2
     m_Bits: 4294967295
